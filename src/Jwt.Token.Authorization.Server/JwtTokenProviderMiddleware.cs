@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
@@ -15,15 +16,23 @@ namespace Ezikey.Cloud.Services.Infrastructure.JwtTokenAuthorizationServer
         private readonly RequestDelegate _next;
         private readonly JwtTokenProviderOptions _options;
         private readonly IJwtTokenProviderBehavior _behavior;
+        private readonly ILogger<JwtTokenProviderMiddleware> _logger;
 
         public JwtTokenProviderMiddleware(
             RequestDelegate next,
             IOptions<JwtTokenProviderOptions> options,
-            IJwtTokenProviderBehavior behavior)
+            IJwtTokenProviderBehavior behavior,
+            ILogger<JwtTokenProviderMiddleware> logger = null)
         {
+            if (behavior == null)
+            {
+                throw new ArgumentNullException(nameof(behavior));
+            }
+
             _next = next;
             _options = options.Value;
             _behavior = behavior;
+            _logger = logger;
         }
 
         public Task Invoke(HttpContext context)
@@ -34,10 +43,14 @@ namespace Ezikey.Cloud.Services.Infrastructure.JwtTokenAuthorizationServer
                 return _next(context);
             }
 
+            LogDebug($"Accessed path {_options.Path}");
+
             // Request must be POST with Content-Type: application/x-www-form-urlencoded
             if (!context.Request.Method.Equals("POST")
                || !context.Request.HasFormContentType)
             {
+                LogError($"Bad request. Request method is {context.Request.Method}. Request Content Type is {context.Request.ContentType}");
+
                 context.Response.StatusCode = 400;
                 return context.Response.WriteAsync("Bad request.");
             }
@@ -47,9 +60,13 @@ namespace Ezikey.Cloud.Services.Infrastructure.JwtTokenAuthorizationServer
 
         private async Task GenerateToken(HttpContext context)
         {
+            LogDebug("Attempting to get identity.");
+
             var identity = await _behavior.GetIdentity(context);
             if (identity == null)
             {
+                LogError("Invalid username or password.");
+
                 context.Response.StatusCode = 400;
                 await context.Response.WriteAsync("Invalid username or password.");
                 return;
@@ -66,6 +83,9 @@ namespace Ezikey.Cloud.Services.Infrastructure.JwtTokenAuthorizationServer
             {
                 claims.Add(new Claim(JwtRegisteredClaimNames.Sub, _options.Subject));
             }
+
+            LogDebug("Attempting to get custom claims.");
+
             var customClaims = _behavior.CustomClaims(context, identity);
             if (customClaims != null)
             {
@@ -73,6 +93,8 @@ namespace Ezikey.Cloud.Services.Infrastructure.JwtTokenAuthorizationServer
             }
 
             // Create the JWT and write it to a string
+            LogDebug("Attempting to generate jwt token.");
+
             var jwtHeader = new JwtHeader(_options.SigningCredentials);
             var jwtPayload = new JwtPayload(
                 issuer:_options.Issuer,
@@ -85,6 +107,8 @@ namespace Ezikey.Cloud.Services.Infrastructure.JwtTokenAuthorizationServer
             var jwt = new JwtSecurityToken(jwtHeader, jwtPayload);
             var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
 
+            LogDebug($"Jwt token generated successful.");
+
             var response = new
             {
                 access_token = encodedJwt,
@@ -94,6 +118,16 @@ namespace Ezikey.Cloud.Services.Infrastructure.JwtTokenAuthorizationServer
             // Serialize and return the response
             context.Response.ContentType = "application/json";
             await context.Response.WriteAsync(JsonConvert.SerializeObject(response, new JsonSerializerSettings { Formatting = Formatting.Indented }));
+        }
+
+        private void LogDebug(string message)
+        {
+            _logger?.LogDebug(message);
+        }
+
+        private void LogError(string message)
+        {
+            _logger?.LogError(message);
         }
     }
 }
