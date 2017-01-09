@@ -15,18 +15,15 @@ namespace Jwt.Token.Authorization.Server
     {
         private readonly RequestDelegate _next;
         private readonly JwtTokenAuthorizationServerOptions _options;
-        private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<JwtTokenAuthorizationServerMiddleware> _logger;
 
         public JwtTokenAuthorizationServerMiddleware(
             RequestDelegate next,
             IOptions<JwtTokenAuthorizationServerOptions> options,
-            IServiceProvider serviceProvider,
             ILogger<JwtTokenAuthorizationServerMiddleware> logger = null)
         {
             _next = next;
             _options = options.Value;
-            _serviceProvider = serviceProvider;
             _logger = logger;
         }
 
@@ -56,7 +53,7 @@ namespace Jwt.Token.Authorization.Server
         {
             LogDebug("Attempting to get identity.");
 
-            var userManager = _serviceProvider.GetService<IUserManager>();
+            var userManager = context.RequestServices.GetService<IUserManager>();
             if (userManager == null)
             {
                 LogDebug("Did not implement IUserManager.");
