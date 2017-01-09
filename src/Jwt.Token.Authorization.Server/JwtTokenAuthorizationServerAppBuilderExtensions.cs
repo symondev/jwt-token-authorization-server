@@ -1,16 +1,12 @@
-﻿using Ezikey.Cloud.Services.Infrastructure.JwtTokenAuthorizationServer;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Options;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Jwt.Token.Authorization.Server
 {
     public static class JwtTokenAuthorizationServerAppBuilderExtensions
     {
-        public static IApplicationBuilder UseJwtTokenAuthorizationServer(this IApplicationBuilder app, JwtTokenProviderOptions options)
+        public static IApplicationBuilder UseJwtTokenAuthorizationServer(this IApplicationBuilder app, JwtTokenAuthorizationServerOptions options)
         {
             if (app == null)
             {
@@ -22,7 +18,7 @@ namespace Jwt.Token.Authorization.Server
                 throw new ArgumentNullException(nameof(options));
             }
 
-            return app.UseMiddleware<JwtTokenProviderMiddleware>(Options.Create(options));
+            return app.UseMiddleware<JwtTokenAuthorizationServerMiddleware>(Options.Create(options));
         }
     }
 }

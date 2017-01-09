@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Ezikey.Cloud.Services.Infrastructure.JwtTokenAuthorizationServer
+namespace Jwt.Token.Authorization.Server
 {
-    public class JwtTokenProviderOptions
+    public class JwtTokenAuthorizationServerOptions
     {
         public string Path { get; set; } = "/token";
 
@@ -16,7 +18,5 @@ namespace Ezikey.Cloud.Services.Infrastructure.JwtTokenAuthorizationServer
         public TimeSpan Expiration { get; set; } = TimeSpan.FromMinutes(5);
 
         public SigningCredentials SigningCredentials { get; set; }
-
-
     }
 }

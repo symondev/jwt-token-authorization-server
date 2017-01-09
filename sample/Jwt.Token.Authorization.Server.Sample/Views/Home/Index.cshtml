@@ -1,0 +1,56 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="row">
+    <div class="col-lg-12">
+        <button id="btnToken" type="button" class="btn btn-default">Get Token</button>
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-12">
+        <button id="btnProcess" type="button" class="btn btn-success">Process Test</button>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        var token;
+
+        $('#btnToken')
+            .click(function() {
+                $.ajax({
+                    url: '/token',
+                    type: 'post',
+                    data: { username: 'test', password: 'test' },
+                    success: function (res) {
+                        token = res.access_token;
+                        alert('Got token: ' + token);
+                    },
+                    error: function(err) {
+                        if (err.status === 400) {
+                            alert(err.responseText);
+                        }
+                    }
+                });
+            });
+
+        $('#btnProcess').click(function () {
+            $.ajax({
+                url: '/api/test',
+                type: 'get',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                },
+                success: function (res) {
+                    alert(res);
+                },
+                error: function (err) {
+                    if (err.status === 401) {
+                        alert('Unauthorized');
+                    }
+                }
+            });
+        });
+    </script>
+}

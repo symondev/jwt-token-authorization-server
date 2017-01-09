@@ -1,37 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
-namespace Ezikey.Cloud.Services.Infrastructure.JwtTokenAuthorizationServer
+namespace Jwt.Token.Authorization.Server
 {
-    public class JwtTokenProviderMiddleware
+    public class JwtTokenAuthorizationServerMiddleware
     {
         private readonly RequestDelegate _next;
-        private readonly JwtTokenProviderOptions _options;
-        private readonly IJwtTokenProviderBehavior _behavior;
-        private readonly ILogger<JwtTokenProviderMiddleware> _logger;
+        private readonly JwtTokenAuthorizationServerOptions _options;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly ILogger<JwtTokenAuthorizationServerMiddleware> _logger;
 
-        public JwtTokenProviderMiddleware(
+        public JwtTokenAuthorizationServerMiddleware(
             RequestDelegate next,
-            IOptions<JwtTokenProviderOptions> options,
-            IJwtTokenProviderBehavior behavior,
-            ILogger<JwtTokenProviderMiddleware> logger = null)
+            IOptions<JwtTokenAuthorizationServerOptions> options,
+            IServiceProvider serviceProvider,
+            ILogger<JwtTokenAuthorizationServerMiddleware> logger = null)
         {
-            if (behavior == null)
-            {
-                throw new ArgumentNullException(nameof(behavior));
-            }
-
             _next = next;
             _options = options.Value;
-            _behavior = behavior;
+            _serviceProvider = serviceProvider;
             _logger = logger;
         }
 
@@ -46,8 +41,7 @@ namespace Ezikey.Cloud.Services.Infrastructure.JwtTokenAuthorizationServer
             LogDebug($"Accessed path {_options.Path}");
 
             // Request must be POST with Content-Type: application/x-www-form-urlencoded
-            if (!context.Request.Method.Equals("POST")
-               || !context.Request.HasFormContentType)
+            if (!context.Request.Method.Equals("POST") || !context.Request.HasFormContentType)
             {
                 LogError($"Bad request. Request method is {context.Request.Method}. Request Content Type is {context.Request.ContentType}");
 
@@ -62,7 +56,14 @@ namespace Ezikey.Cloud.Services.Infrastructure.JwtTokenAuthorizationServer
         {
             LogDebug("Attempting to get identity.");
 
-            var identity = await _behavior.GetIdentity(context);
+            var userManager = _serviceProvider.GetService<IUserManager>();
+            if (userManager == null)
+            {
+                LogDebug("Did not implement IUserManager.");
+                throw new Exception("Please implement IUserManager.");
+            }
+
+            var identity = await userManager.GetIdentity(context);
             if (identity == null)
             {
                 LogError("Invalid username or password.");
@@ -83,26 +84,19 @@ namespace Ezikey.Cloud.Services.Infrastructure.JwtTokenAuthorizationServer
             {
                 claims.Add(new Claim(JwtRegisteredClaimNames.Sub, _options.Subject));
             }
-
-            LogDebug("Attempting to get custom claims.");
-
-            var customClaims = _behavior.CustomClaims(context, identity);
-            if (customClaims != null)
-            {
-                claims.AddRange(customClaims);
-            }
+            claims.AddRange(identity.Claims);
 
             // Create the JWT and write it to a string
             LogDebug("Attempting to generate jwt token.");
 
             var jwtHeader = new JwtHeader(_options.SigningCredentials);
             var jwtPayload = new JwtPayload(
-                issuer:_options.Issuer,
-                audience:_options.Audience,
+                issuer: _options.Issuer,
+                audience: _options.Audience,
                 claims: claims,
-                notBefore:now,
+                notBefore: now,
                 expires: now.Add(_options.Expiration),
-                issuedAt:now);
+                issuedAt: now);
 
             var jwt = new JwtSecurityToken(jwtHeader, jwtPayload);
             var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);

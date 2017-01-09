@@ -1,5 +1,19 @@
 {
-  "version": "1.0.0-*",
+  "version": "1.0.0",
+  "authors": [ "Symon Zhao" ],
+  "description": "Jwt.Token.Authorization.Server is an extensions to provide JWT Token Authorizatin Server.",
+  "title": "Jwt.Token.Authorization.Server",
+  "copyright": "2016 ? Symon Zhao",
+  "packOptions": {
+    "owners": [ "Symon Zhao" ],
+    "licenseUrl": "https://opensource.org/licenses/MIT",
+    "projectUrl": "https://github.com/symondev/jwt-token-authorization-server",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/symondev/jwt-token-authorization-server"
+    },
+    "tags": [ "jwt", "authorization" ]
+  },
 
   "dependencies": {
     "Microsoft.AspNetCore.Http.Abstractions": "1.0.0",
