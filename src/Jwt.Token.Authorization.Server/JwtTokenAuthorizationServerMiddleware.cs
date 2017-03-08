@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Symon.AspNetCore.Mvc.ExceptionHandler.Abstractions;
 
 namespace Jwt.Token.Authorization.Server
 {
@@ -40,10 +41,18 @@ namespace Jwt.Token.Authorization.Server
             // Request must be POST with Content-Type: application/x-www-form-urlencoded
             if (!context.Request.Method.Equals("POST") || !context.Request.HasFormContentType)
             {
-                LogError($"Bad request. Request method is {context.Request.Method}. Request Content Type is {context.Request.ContentType}");
+                var errMessage = $"Bad request. Request method is {context.Request.Method}. Request Content Type is {context.Request.ContentType}";
+                LogError(errMessage);
 
                 context.Response.StatusCode = 400;
-                return context.Response.WriteAsync("Bad request.");
+                context.Response.ContentType = "application/json";
+                return context.Response.WriteAsync(JsonConvert.SerializeObject(
+                    new ApiErrorResult
+                    {
+                        Type = ErrorType.Unexpected,
+                        ErrorMessage = errMessage
+                    }
+                    , new JsonSerializerSettings { Formatting = Formatting.Indented }));
             }
 
             return GenerateToken(context);
@@ -66,7 +75,14 @@ namespace Jwt.Token.Authorization.Server
                 LogError("Invalid username or password.");
 
                 context.Response.StatusCode = 400;
-                await context.Response.WriteAsync("Invalid username or password.");
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsync(JsonConvert.SerializeObject(
+                    new ApiErrorResult
+                    {
+                        Type = ErrorType.Unexpected,
+                        ErrorMessage = "Invalid username or password."
+                    }
+                    , new JsonSerializerSettings { Formatting = Formatting.Indented }));
                 return;
             }
 
