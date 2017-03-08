@@ -50,9 +50,14 @@ namespace Jwt.Token.Authorization.Server
                     new ApiErrorResult
                     {
                         Type = ErrorType.Unexpected,
-                        ErrorMessage = errMessage
+                        Message = errMessage
                     }
-                    , new JsonSerializerSettings { Formatting = Formatting.Indented }));
+                    , Formatting.Indented,
+                    new JsonSerializerSettings
+                    {
+                        ContractResolver =
+                            new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver()
+                    }));
             }
 
             return GenerateToken(context);
@@ -80,9 +85,13 @@ namespace Jwt.Token.Authorization.Server
                     new ApiErrorResult
                     {
                         Type = ErrorType.Unexpected,
-                        ErrorMessage = "Invalid username or password."
-                    }
-                    , new JsonSerializerSettings { Formatting = Formatting.Indented }));
+                        Message = "Invalid username or password."
+                    }, Formatting.Indented,
+                    new JsonSerializerSettings
+                    {
+                        ContractResolver =
+                            new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver()
+                    }));
                 return;
             }
 
@@ -124,7 +133,12 @@ namespace Jwt.Token.Authorization.Server
 
             // Serialize and return the response
             context.Response.ContentType = "application/json";
-            await context.Response.WriteAsync(JsonConvert.SerializeObject(response, new JsonSerializerSettings { Formatting = Formatting.Indented }));
+            await context.Response.WriteAsync(JsonConvert.SerializeObject(response, Formatting.Indented,
+                new JsonSerializerSettings
+                {
+                    ContractResolver =
+                        new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver()
+                }));
         }
 
         private void LogDebug(string message)

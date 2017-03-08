@@ -1,5 +1,5 @@
 {
-  "version": "1.0.2",
+  "version": "1.0.3",
   "authors": [ "Symon Zhao" ],
   "description": "Jwt.Token.Authorization.Server is an extensions to provide JWT Token Authorizatin Server.",
   "title": "Jwt.Token.Authorization.Server",
@@ -20,7 +20,7 @@
     "Microsoft.Extensions.Logging.Abstractions": "1.0.0",
     "Microsoft.Extensions.Options": "1.0.0",
     "Newtonsoft.Json": "9.0.1",
-    "Symon.AspNetCore.Mvc.ExceptionHandler.Abstractions": "1.0.0",
+    "Symon.AspNetCore.Mvc.ExceptionHandler.Abstractions": "1.0.1",
     "System.IdentityModel.Tokens.Jwt": "5.0.0"
   },
 
